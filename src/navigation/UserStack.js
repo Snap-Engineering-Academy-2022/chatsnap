@@ -1,7 +1,21 @@
-import React from "react";
+import React, { useLayoutEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { View, StyleSheet, Pressable, Text } from "react-native";
 
+import {
+  CameraOutline,
+  LensSearchFill,
+  ChatOutline,
+  ChatFill,
+  GroupOutline,
+  GroupFill,
+  MapPinOutline,
+  MapPinFill,
+  PlayOutline,
+  PlayFill,
+} from "../../assets/snapchat/NavigationIcons";
+import { colors } from "../../assets/themes/colors";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { Button } from "react-native";
 
@@ -15,10 +29,11 @@ import SpotlightScreen from "../screens/SpotlightScreen";
 
 // Stacks
 import ChatStack from "./ChatStack";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const Tab = createBottomTabNavigator();
 
-export default function UserStack() {
+export default function UserStack({ route }) {
   const auth = getAuth();
   const user = auth.currentUser;
 
@@ -45,47 +60,35 @@ export default function UserStack() {
   return (
     <NavigationContainer>
       <Tab.Navigator
+        tabBar={(props) => <CustomTabBar {...props} />}
         activeColor="#f0edf6"
         inactiveColor="#3e2465"
-        barStyle={{ backgroundColor: '#694fad' }}
+        barStyle={{
+          backgroundColor: "black",
+        }}
         initialRouteName="Camera"
-        screenOptions={({ route }) => ({
-          tabBarIcon: ({ focused, size }) => {
-            let iconName;
-            let iconColor;
-
-            if (route.name == "Map") {
-              iconName = "ios-location-outline";
-              iconColor = focused ? "green" : "grey";
-            } else if (route.name === "ChatStack") {
-              iconName = "ios-chatbox-outline";
-              iconColor = focused ? "#2b83b3" : "grey";
-            } else if (route.name === "Camera") {
-              iconName = focused ? "ios-scan-circle-outline" : "ios-camera-outline";
-              iconColor = focused ? "yellow" : "grey";
-            } else if (route.name === "Stories") {
-              iconName = "ios-people-outline";
-              iconColor = focused ? "purple" : "grey";
-            } else if (route.name === "Spotlight") {
-              iconName = "ios-play-outline";
-              iconColor = focused ? "red" : "grey";
-            }
-            return <Ionicons name={iconName} size={size} color={iconColor} />;
-          },
-          tabBarStyle: { backgroundColor: "#000" },
-        })}
       >
-        <Tab.Screen name="Map" component={MapScreen} options={{...screenOptions, headerShown: false}} />
-        <Tab.Screen name="ChatStack" component={ChatStack} options={{ headerShown: false, tabBarShowLabel: false }} />
+        <Tab.Screen
+          name="Map"
+          component={MapScreen}
+          options={{ ...screenOptions, headerShown: false }}
+        />
+        <Tab.Screen
+          name="ChatStack"
+          component={ChatStack}
+          options={{
+            headerShown: false,
+          }}
+        />
         <Tab.Screen
           name="Camera"
           component={CameraScreen}
-          options={{...screenOptions, headerShown: false}} 
+          options={{ ...screenOptions, headerShown: false }}
         />
         <Tab.Screen
           name="Stories"
           component={StoriesScreen}
-          options={screenOptions}
+          options={(screenOptions, { headerShown: false })}
         />
         <Tab.Screen
           name="Spotlight"
@@ -96,3 +99,77 @@ export default function UserStack() {
     </NavigationContainer>
   );
 }
+
+const getTabIcon = (routeName, focused) => {
+  if (routeName == "Map") {
+    return focused ? <MapPinFill /> : <MapPinOutline />;
+  } else if (routeName === "ChatStack") {
+    return focused ? <ChatFill /> : <ChatOutline />;
+  } else if (routeName === "Camera") {
+    return focused ? <LensSearchFill /> : <CameraOutline />;
+  } else if (routeName === "Stories") {
+    return focused ? <GroupFill /> : <GroupOutline />;
+  } else if (routeName === "Spotlight") {
+    return focused ? <PlayFill /> : <PlayOutline />;
+  }
+};
+
+const CustomTabBar = (props) => {
+  const { state, descriptors, navigation } = props;
+  const insets = useSafeAreaInsets();
+
+  // Hide tab navigator if we're in the conversation screen of the Chat tab
+  // Will prevent tab navigator from being displayed in any screens that are
+  // not part of the tab navigator (is kinda sus)
+  if (state.index == 1 && state.routes[1]?.state?.index == 1) {
+    return null;
+  }
+
+  return (
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+      <View style={styles.grayRectangle}>
+        {state.routes.map((route, index) => {
+          const { options } = descriptors[route.key];
+          const label = options.tabBarLabel || options.title || route.name;
+
+          // Customize the active tab style
+          const isActive = state.index === index;
+          const tabStyle = isActive ? styles.activeTab : styles.inactiveTab;
+
+          return (
+            <Pressable
+              key={route.key}
+              style={[styles.tab, tabStyle]}
+              onPress={() => navigation.navigate(route.name)}
+            >
+              {getTabIcon(route.name, isActive)}
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    position: "absolute",
+    width: "100%",
+    backgroundColor: "white",
+    borderRadius: 24,
+    padding: 16,
+    bottom: 0,
+  },
+  grayRectangle: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    backgroundColor: colors.belowPage,
+    borderRadius: 100,
+    height: 48,
+  },
+  tab: {
+    paddingHorizontal: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});

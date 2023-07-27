@@ -1,21 +1,18 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  SafeAreaView,
-  Button,
-  Image,
-} from "react-native";
+import { StyleSheet, Text, View, Button, Image } from "react-native";
 import { useEffect, useRef, useState } from "react";
 import { Camera, CameraType } from "expo-camera";
 import * as MediaLibrary from "expo-media-library";
-import { shareAsync } from 'expo-sharing';
-import * as ImagePicker from 'expo-image-picker';
+import { shareAsync } from "expo-sharing";
+import * as ImagePicker from "expo-image-picker";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import CameraActions from "../components/CameraActions";
 import CameraOptions from "../components/CameraOptions";
 
 export default function CameraScreen({ navigation, focused }) {
+  const tabBarHeight = useBottomTabBarHeight();
+  const insets = useSafeAreaInsets();
   let cameraRef = useRef();
   const [hasCameraPermission, setHasCameraPermission] = useState();
   const [type, setType] = useState(CameraType.back);
@@ -35,9 +32,13 @@ export default function CameraScreen({ navigation, focused }) {
   }, []);
 
   if (hasCameraPermission === undefined) {
-    return <Text>Requesting permissions...</Text>
+    return <Text>Requesting permissions...</Text>;
   } else if (!hasCameraPermission) {
-    return <Text>Permission for camera not granted. Please change this in settings.</Text>
+    return (
+      <Text>
+        Permission for camera not granted. Please change this in settings.
+      </Text>
+    );
   }
 
   function flipCamera() {
@@ -77,8 +78,7 @@ export default function CameraScreen({ navigation, focused }) {
     MediaLibrary.saveToLibraryAsync(photo.uri).then(() => {
       setPhoto(undefined);
     });
-  };
-
+  }
 
   if (photo) {
     let sharePic = () => {
@@ -102,15 +102,23 @@ export default function CameraScreen({ navigation, focused }) {
   }
 
   return (
-    <>
+    <View
+      style={[
+        styles.container,
+        { marginBottom: tabBarHeight, paddingTop: insets.top },
+      ]}
+    >
       <Camera style={styles.camera} type={type} ref={cameraRef} />
       <CameraOptions flipCamera={flipCamera} />
       <CameraActions checkGallery={checkGallery} takePhoto={takePhoto} />
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   camera: {
     flex: 1,
     alignItems: "center",
